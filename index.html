@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trabajo 13/08/2021</title>
+</head>
+<body>
+
+    <form id="my-form">
+
+        <div>
+            <label for="title">Título de la película</label>
+            <input type="text" name="title" id="title" placeholder="">
+            <button type="submit"> Buscar </button>
+        </div>
+
+    </form>
+
+    <div id="my-res">
+        
+    </div>
+
+    <script>
+
+        const myForm = document.getElementById('my-form');
+        const myRes = document.getElementById('my-res');
+        let isFormValid = false;
+        let arrayMovies = [];
+
+        const renderMovies = () => {
+            let newDiv, newContet;
+
+            if (arrayMovies.length != 0) {
+
+                myRes.innerHTML = '';
+               
+                arrayMovies.forEach( (mov, i) => {
+                    let {title, description} =  mov;
+                    newDiv = document.createElement('div');
+                    newDiv.innerHTML = `<p>${i+1}. ${title} - ${description}</p>`;
+                    myRes.appendChild(newDiv);
+                });
+                
+            } else {
+                myRes.innerHTML = 'No hay películas';
+            }
+        }
+
+        renderMovies();
+        
+        myForm.addEventListener('submit', validateForm);
+
+        const fecthFn = async (url) => {
+            try {
+                const res = await fetch(url);
+                const json = await res.json();
+                return({
+                    ok: true,
+                    message: 'Good request',
+                    data: json 
+                });
+            } catch {
+                return({
+                    ok: false,
+                    message: 'Error in request',
+                    data: [] 
+                });
+            }
+            
+        }
+          
+        function validateForm(event) {
+            event.preventDefault();
+
+            const inputTitle = document.getElementById('title');
+            const apiKey = 'k_8c5auxup';
+
+            let baseUrl = `https://imdb-api.com/en/API/SearchMovie/${apiKey}/${inputTitle.value}`;
+
+            fecthFn(baseUrl).then( res => {
+                let {ok, message, data} = res;
+                
+
+                if ( (ok === true) && ( data.results.length > 0 )) {
+                    
+                    data.results.map( (movie) => {
+                        
+                        let {id, image, title, description} = movie;
+                        
+                        let myMovie = {
+                            id,
+                            image,
+                            title,
+                            description
+                        }
+                        
+                        arrayMovies.push(myMovie);
+
+                    });
+                }
+
+                renderMovies();
+            });
+
+            
+
+        }
+
+    </script>
+    
+</body>
+</html>
