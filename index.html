@@ -9,11 +9,15 @@
 <body>
 
     <form id="my-form">
+        <!--
+            Construir en un archivo HTML un formulario que permita 
+            preguntar por información de películas, mediante su título
+        -->
 
         <div>
             <label for="title">Título de la película</label>
             <input type="text" name="title" id="title" placeholder="">
-            <button type="submit"> Buscar </button>
+            <button type="submit"> Buscar </button> 
         </div>
 
     </form>
@@ -26,6 +30,8 @@
 
         const myForm = document.getElementById('my-form');
         const myRes = document.getElementById('my-res');
+        const inputTitle = document.getElementById('title');
+
         let isFormValid = false;
         let arrayMovies = [];
 
@@ -37,9 +43,9 @@
                 myRes.innerHTML = '';
                
                 arrayMovies.forEach( (mov, i) => {
-                    let {title, description} =  mov;
+                    let {title, year} =  mov;
                     newDiv = document.createElement('div');
-                    newDiv.innerHTML = `<p>${i+1}. ${title} - ${description}</p>`;
+                    newDiv.innerHTML = `<p>${i+1}. ${title} - ${year}</p>`;
                     myRes.appendChild(newDiv);
                 });
                 
@@ -48,11 +54,7 @@
             }
         }
 
-        renderMovies();
-        
-        myForm.addEventListener('submit', validateForm);
-
-        const fecthFn = async (url) => {
+        const fecthFnTitle = async (url) => {
             try {
                 const res = await fetch(url);
                 const json = await res.json();
@@ -68,45 +70,96 @@
                     data: [] 
                 });
             }
+        }
+
+        const fetchFnYear = async (url  ) => {
+            const res = await fetch(url);
+            const json = await res.json();
             
+            return json;
+        }
+
+        const validateFields = () => {
+            
+            let val;
+            // El formulario debe validar que no se puedan realizar peticiones sin el nombre.
+            val = inputTitle.value.length > 0 ? true : false;
+            // No se pueden añadir películas repetidas.
+            val = arrayMovies.filter( movie => movie.title === inputTitle.value ).length >= 1 ? false : true;
+
+            return val;
         }
           
-        function validateForm(event) {
+        const validateForm = (event) => {
+            // La petición debe realizarse cuando se realice el submit del formulario.
             event.preventDefault();
 
-            const inputTitle = document.getElementById('title');
-            const apiKey = 'k_8c5auxup';
+            if ( validateFields() ) {
 
-            let baseUrl = `https://imdb-api.com/en/API/SearchMovie/${apiKey}/${inputTitle.value}`;
+                const apiKey = '';
+                //let baseUrl = `https://imdb-api.com/en/API/SearchMovie/${apiKey}/${inputTitle.value}`;
 
-            fecthFn(baseUrl).then( res => {
-                let {ok, message, data} = res;
-                
+                let baseUrl = `https://imdb-api.com/en/API/SearchTitle/${apiKey}/${inputTitle.value}`;
 
-                if ( (ok === true) && ( data.results.length > 0 )) {
-                    
-                    data.results.map( (movie) => {
+                console.log(baseUrl);
+
+                // Se debe añadir un indicador mientras se espera la respuesta de imdb con la información
+                myRes.innerHTML = 'Busncado.....';
+
+                fecthFnTitle(baseUrl).then( res => {
+
+                    let {ok, message, data} = res;
+                    let first = true;
+
+                    if ( (ok === true) && ( data.results.length > 0 )) {
                         
-                        let {id, image, title, description} = movie;
-                        
-                        let myMovie = {
-                            id,
-                            image,
-                            title,
-                            description
-                        }
-                        
-                        arrayMovies.push(myMovie);
+                        data.results.map( (movie) => {
 
-                    });
-                }
+                            let {id, image, title, description} = movie;
+                            
+                            // Cada consulta exitosa que se realice debe almacenar en una lista el título y el año de la película
+                            if (first) {
 
-                renderMovies();
-            });
+                                let baseUrlYear = `https://imdb-api.com/en/API/Title/${apiKey}/${id}`;
+                                let year;
 
-            
+                                fetchFnYear(baseUrlYear).then( res => {
+                                    year = res.year;
+
+                                    let myMovie = {
+                                        id,
+                                        image,
+                                        title,
+                                        description,
+                                        year
+                                    }
+
+                                    arrayMovies.push(myMovie);
+                                    renderMovies();
+                                
+                                });
+                                                               
+                                first = false;
+                            }
+
+
+                        });
+                    }
+
+                })
+                .catch(err => {
+                    console.log('Error en el request', err);
+                });
+
+            } else {
+                alert('El título no puede estar vacío o se repite la película');
+            }   
 
         }
+
+        renderMovies();
+        
+        myForm.addEventListener('submit', validateForm);
 
     </script>
     
